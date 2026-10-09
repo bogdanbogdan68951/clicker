@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кликер: Программист</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    user-select: none;
+  }
+  h1 { font-size: 20px; margin-bottom: 5px; color: #4ecca3; }
+  .money {
+    font-size: 32px; font-weight: bold; color: #ffd700;
+    margin-bottom: 5px; text-shadow: 0 0 10px rgba(255,215,0,0.5);
+  }
+  .per-click { font-size: 14px; color: #aaa; margin-bottom: 20px; }
+
+  /* Сцена */
+  .scene {
+    position: relative;
+    width: 320px;
+    height: 260px;
+    background: #0f0f1e;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 2px solid #4ecca3;
+  }
+  .desk {
+    position: absolute; bottom: 40px; left: 0; right: 0;
+    height: 15px; background: #6b4423;
+  }
+  /* Монитор — общий контейнер, меняется с улучшением */
+  .monitor-wrap {
+    position: absolute;
+    bottom: 55px;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: all 0.4s;
+  }
+  .monitor {
+    background: #222;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #0f0;
+    font-family: monospace;
+    overflow: hidden;
+    padding: 4px;
+    white-space: pre;
+    line-height: 1.1;
+    transition: all 0.4s;
+  }
+  .monitor-stand {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px; height: 15px;
+    background: #444;
+    transition: all 0.4s;
+  }
+  /* Второй монитор */
+  .monitor2 {
+    position: absolute;
+    bottom: 55px;
+    left: 20px;
+    width: 90px;
+    height: 65px;
+    background: #222;
+    border: 4px solid #444;
+    border-radius: 6px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .monitor2 .screen {
+    background: #05a;
+    color: #cff;
+    font-size: 10px;
+  }
+  .monitor2.on { display: flex; }
+
+  /* Человечек */
+  .person {
+    position: absolute; bottom: 55px; left: 50%;
+    transform: translateX(-50%);
+    width: 80px; height: 130px;
+    transition: transform 0.08s;
+    z-index: 2;
+  }
+  .person.typing { transform: translateX(-50%) translateY(-3px); }
+  .head {
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 45px; height: 45px;
+    background: #f4c79a; border-radius: 50%;
+  }
+  .hair {
+    position: absolute; top: -3px; left: 50%;
+    transform: translateX(-50%);
+    width: 47px; height: 22px;
+    background: #4a2c17; border-radius: 50% 50% 0 0;
+  }
+  .eye {
+    position: absolute; top: 20px;
+    width: 5px; height: 5px;
+    background: #222; border-radius: 50%;
+  }
+  .eye.left { left: 12px; }
+  .eye.right { right: 12px; }
+  .body {
+    position: absolute; top: 42px; left: 50%;
+    transform: translateX(-50%);
+    width: 55px; height: 50px;
+    background: #4ecca3; border-radius: 12px 12px 6px 6px;
+  }
+  .arm {
+    position: absolute; top: 55px;
+    width: 16px; height: 40px;
+    background: #f4c79a; border-radius: 8px;
+    transition: transform 0.08s;
+  }
+  .arm.left { left: 8px; transform: rotate(20deg); }
+  .arm.right { right: 8px; transform: rotate(-20deg); }
+  .person.typing .arm.left { transform: rotate(45deg); }
+  .person.typing .arm.right { transform: rotate(-45deg); }
+  .chair {
+    position: absolute; bottom: 40px; left: 50%;
+    transform: translateX(-50%);
+    width: 90px; height: 20px;
+    background: #333; border-radius: 6px;
+    z-index: 1;
+  }
+
+  /* Кнопка */
+  .click-btn {
+    width: 180px; height: 180px; border-radius: 50%; border: none;
+    background: radial-gradient(circle at 30% 30%, #4ecca3, #2a8a6a);
+    color: #fff; font-size: 22px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 8px 0 #1e5f4a, 0 12px 25px rgba(0,0,0,0.5);
+    transition: all 0.08s; margin-bottom: 20px;
+  }
+  .click-btn:active {
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 #1e5f4a, 0 4px 10px rgba(0,0,0,0.5);
+  }
+
+  /* Магазин */
+  .upgrades {
+    width: 100%; max-width: 340px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .upgrade {
+    background: #22223a; border: 2px solid #4ecca3;
+    border-radius: 10px; padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; transition: all 0.15s; font-size: 14px;
+  }
+  .upgrade:active { transform: scale(0.97); }
+  .upgrade.disabled { opacity: 0.4; cursor: not-allowed; border-color: #555; }
+  .upgrade.bought { border-color: #ffd700; background: #2a2a1a; }
+  .upgrade .info { text-align: left; }
+  .upgrade .name { font-weight: bold; color: #4ecca3; }
+  .upgrade.bought .name { color: #ffd700; }
+  .upgrade .desc { font-size: 11px; color: #aaa; }
+  .upgrade .price { color: #ffd700; font-weight: bold; }
+
+  /* Летающие монетки */
+  .coin {
+    position: fixed; font-size: 24px; pointer-events: none;
+    animation: fly 0.8s ease-out forwards; z-index: 999;
+  }
+  @keyframes fly {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+  }
+</style>
+</head>
+<body>
+
+  <h1>💻 Программист-кликер</h1>
+  <div class="money" id="money">0 ₽</div>
+  <div class="per-click" id="perClick">За клик: 1 ₽</div>
+
+  <div class="scene">
+    <div class="chair"></div>
+    <div class="desk"></div>
+    <div class="monitor-stand" id="stand"></div>
+
+    <!-- Второй монитор -->
+    <div class="monitor2" id="monitor2">
+      <div class="screen" id="screen2">&gt; compile</div>
+    </div>
+
+    <!-- Основной монитор -->
+    <div class="monitor-wrap" id="monitorWrap">
+      <div class="monitor" id="monitor">
+        <div class="screen" id="screen">&gt; _</div>
+      </div>
+    </div>
+
+    <div class="person" id="person">
+      <div class="head">
+        <div class="hair"></div>
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+      </div>
+      <div class="arm left"></div>
+      <div class="body"></div>
+      <div class="arm right"></div>
+    </div>
+  </div>
+
+  <button class="click-btn" id="clickBtn">РАБОТАТЬ</button>
+  <div class="upgrades" id="upgrades"></div>
+
+<script>
+  let money = 0;
+  let perClick = 1;
+  let autoIncome = 0;
+  let pcLevel = 1;        // уровень компьютера
+  let hasSecondMonitor = false;
+
+  const moneyEl = document.getElementById('money');
+  const perClickEl = document.getElementById('perClick');
+  const clickBtn = document.getElementById('clickBtn');
+  const person = document.getElementById('person');
+  const screen = document.getElementById('screen');
+  const screen2 = document.getElementById('screen2');
+  const monitor = document.getElementById('monitor');
+  const monitorWrap = document.getElementById('monitorWrap');
+  const monitor2 = document.getElementById('monitor2');
+  const stand = document.getElementById('stand');
+  const upgradesEl = document.getElementById('upgrades');
+
+  const codeLines = [
+    '> while(true) {', '>   money++;', '> }', '> git push',
+    '> npm run', '> 404 error', '> fixing bug...', '> coffee.exe',
+    '> deploy...', '> CTRL+S',
+  ];
+  const codeLines2 = [
+    '> compile...', '> tests: OK', '> build done', '> git merge',
+    '> server up', '> logs...', '> ping 8.8.8.8',
+  ];
+
+  // Улучшения: type: 'visual' — визуальные, 'stat' — только цифры
+  const upgrades = [
+    { id: 'keyboard', name: '⌨️ Механическая клавиатура', desc: '+1 ₽ за клик', price: 25, type: 'stat',
+      effect: () => perClick += 1 },
+    { id: 'coffee', name: '☕ Кофе', desc: '+2 ₽ за клик', price: 100, type: 'stat',
+      effect: () => perClick += 2 },
+    { id: 'monitor2', name: '🖥️ Второй монитор', desc: '+5 ₽ за клик • появится на столе', price: 300, type: 'visual',
+      effect: () => { perClick += 5; hasSecondMonitor = true; monitor2.classList.add('on'); } },
+    { id: 'pc2', name: '💻 Компьютер получше', desc: '+3 ₽/сек • монитор станет больше', price: 500, type: 'visual',
+      effect: () => { autoIncome += 3; pcLevel = 2; updatePCVisual(); } },
+    { id: 'intern', name: '🧑‍💻 Стажёр', desc: '+1 ₽/сек', price: 700, type: 'stat',
+      effect: () => autoIncome += 1 },
+    { id: 'pc3', name: '🎮 Игровой ПК с подсветкой', desc: '+15 ₽/сек • крутой монитор', price: 2000, type: 'visual',
+      effect: () => { autoIncome += 15; pcLevel = 3; updatePCVisual(); } },
+    { id: 'server', name: '🖧 Сервер', desc: '+5 ₽/сек', price: 800, type: 'stat',
+      effect: () => autoIncome += 5 },
+    { id: 'pc4', name: '🖥️ Монитор 4K + RTX', desc: '+50 ₽/сек • топ-сетап', price: 8000, type: 'visual',
+      effect: () => { autoIncome += 50; pcLevel = 4; updatePCVisual(); } },
+    { id: 'ai', name: '🤖 ИИ-помощник', desc: '+20 ₽/сек', price: 3000, type: 'stat',
+      effect: () => autoIncome += 20 },
+    { id: 'company', name: '🏢 Своя компания', desc: '+100 ₽/сек', price: 15000, type: 'stat',
+      effect: () => autoIncome += 100 },
+  ];
+
+  // Визуальные параметры ПК по уровням
+  function updatePCVisual() {
+    const m = monitor;
+    const s = screen;
+    const st = stand;
+
+    if (pcLevel === 1) {
+      m.style.width = '110px'; m.style.height = '75px';
+      m.style.border = '4px solid #444';
+      m.style.boxShadow = 'none';
+      s.style.background = '#0a0'; s.style.color = '#0f0';
+      st.style.width = '30px';
+    } else if (pcLevel === 2) {
+      m.style.width = '140px'; m.style.height = '90px';
+      m.style.border = '4px solid #666';
+      m.style.boxShadow = '0 0 8px rgba(100,150,255,0.5)';
+      s.style.background = '#06c'; s.style.color = '#cff';
+      st.style.width = '40px';
+    } else if (pcLevel === 3) {
+      m.style.width = '160px'; m.style.height = '100px';
+      m.style.border = '4px solid #4ecca3';
+      m.style.boxShadow = '0 0 18px rgba(78,204,163,0.9), 0 0 30px rgba(255,0,200,0.5)';
+      s.style.background = 'linear-gradient(135deg,#0a0,#05f,#a0f)';
+      s.style.color = '#fff';
+      st.style.width = '50px';
+    } else if (pcLevel === 4) {
+      m.style.width = '180px'; m.style.height = '110px';
+      m.style.border = '4px solid #ffd700';
+      m.style.boxShadow = '0 0 25px rgba(255,215,0,1), 0 0 45px rgba(255,0,100,0.7)';
+      s.style.background = 'linear-gradient(135deg,#000,#ff0,#f0f,#0ff)';
+      s.style.color = '#fff';
+      st.style.width = '60px';
+    }
+  }
+
+  function formatMoney(n) {
+    if (n >= 1e9) return (n/1e9).toFixed(2) + ' млрд';
+    if (n >= 1e6) return (n/1e6).toFixed(2) + ' млн';
+    if (n >= 1e3) return (n/1e3).toFixed(2) + ' тыс';
+    return Math.floor(n);
+  }
+
+  function updateUI() {
+    moneyEl.textContent = formatMoney(money) + ' ₽';
+    perClickEl.textContent = `За клик: ${perClick} ₽` + (autoIncome > 0 ? ` | В секунду: ${autoIncome} ₽` : '');
+    renderUpgrades();
+  }
+
+  function renderUpgrades() {
+    upgradesEl.innerHTML = '';
+    upgrades.forEach(u => {
+      const bought = u.bought;
+      const affordable = money >= u.price && !bought;
+      const div = document.createElement('div');
+      div.className = 'upgrade' + (affordable ? '' : ' disabled') + (bought ? ' bought' : '');
+      div.innerHTML = `
+        <div class="info">
+          <div class="name">${u.name} ${bought ? '✔' : ''}</div>
+          <div class="desc">${u.desc}</div>
+        </div>
+        <div class="price">${bought ? 'Куплено' : formatMoney(u.price) + ' ₽'}</div>
+      `;
+      div.addEventListener('click', () => buyUpgrade(u));
+      upgradesEl.appendChild(div);
+    });
+  }
+
+  function buyUpgrade(u) {
+    if (u.bought || money < u.price) return;
+    money -= u.price;
+    u.effect();
+    u.bought = true; // покупается один раз
+    updateUI();
+  }
+
+  function spawnCoin(x, y) {
+    const coin = document.createElement('div');
+    coin.className = 'coin';
+    coin.textContent = '💰';
+    coin.style.left = x + 'px';
+    coin.style.top = y + 'px';
+    document.body.appendChild(coin);
+    setTimeout(() => coin.remove(), 800);
+  }
+
+  function doWork(e) {
+    money += perClick;
+    updateUI();
+    person.classList.add('typing');
+    setTimeout(() => person.classList.remove('typing'), 100);
+
+    screen.textContent = codeLines[Math.floor(Math.random() * codeLines.length)];
+    if (hasSecondMonitor) {
+      screen2.textContent = codeLines2[Math.floor(Math.random() * codeLines2.length)];
+    }
+
+    const rect = clickBtn.getBoundingClientRect();
+    spawnCoin(rect.left + rect.width/2 - 12, rect.top);
+  }
+
+  clickBtn.addEventListener('click', doWork);
+  clickBtn.addEventListener('touchstart', (e) => { e.preventDefault(); doWork(e); }, {passive: false});
+
+  setInterval(() => {
+    if (autoIncome > 0) { money += autoIncome; updateUI(); }
+  }, 1000);
+
+  // Сохранение
+  function save() {
+    const data = {
+      money, perClick, autoIncome, pcLevel, hasSecondMonitor,
+      bought: upgrades.map(u => !!u.bought)
+    };
+    localStorage.setItem('clickerSave', JSON.stringify(data));
+  }
+  function load() {
+    const raw = localStorage.getItem('clickerSave');
+    if (!raw) return;
+    try {
+      const d = JSON.parse(raw);
+      money = d.money || 0;
+      perClick = d.perClick || 1;
+      autoIncome = d.autoIncome || 0;
+      pcLevel = d.pcLevel || 1;
+      hasSecondMonitor = d.hasSecondMonitor || false;
+      if (d.bought) d.bought.forEach((b, i) => { if (upgrades[i]) upgrades[i].bought = b; });
+      if (hasSecondMonitor) monitor2.classList.add('on');
+      updatePCVisual();
+    } catch(e) {}
+  }
+
+  setInterval(save, 3000);
+  load();
+  updateUI();
+</script>
+</body>
+</html>
